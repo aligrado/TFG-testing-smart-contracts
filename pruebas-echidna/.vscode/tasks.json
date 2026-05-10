@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Run Echidna",
+        "type": "shell",
+        "command": "docker run --rm -v \"${workspaceFolder}\":/code -w /code trailofbits/eth-security-toolbox echidna . --contract CounterFuzz --config echidna.yml",
+        "problemMatcher": []
+      }
+    ]
+  }
+  

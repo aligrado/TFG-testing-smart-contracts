@@ -1,0 +1,4 @@
+testMode: "property"
+corpusDir: "corpus"
+balanceContract: 20000000000000000000
+estimateGas: true

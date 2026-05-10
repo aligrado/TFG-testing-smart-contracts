@@ -1,0 +1,3 @@
+testLimit: 10000    # número de tests
+seqLen: 50          # longitud de secuencia de llamadas
+contract: CounterFuzz

