@@ -44,4 +44,5 @@ contract CounterTest is Test {
             assertEq(counter.number(), uint16(num + mult));
         }
     }
+    
 }

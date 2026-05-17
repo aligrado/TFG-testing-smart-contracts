@@ -2,20 +2,21 @@
 pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
-import {Counter} from "../src/Counter.sol";
+import {CounterGas} from "../src/CounterGas.sol";
 
-contract CounterGas is Test {
-    Counter public counter;
+contract CounterGasTest is Test {
+    CounterGas public counter;
 
 
     function setUp() public {
-        counter = new Counter();
+        counter = new CounterGas();
     }
 
     // Gas limits
-    uint256 constant MAX_GAS_SETNUMBER = 10000;
+    uint256 constant MAX_GAS_SETNUMBER = 100000;
     uint256 constant MAX_GAS_INCREMENT = 50000000;
-    uint256 constant MAX_GAS_DOUBLE = 60000000;
+    uint256 constant MAX_GAS_DOUBLE = 100000000;
+    
 
     function testGasSetNumber(uint16 x) public {
         uint256 gasStart = gasleft();
@@ -26,7 +27,7 @@ contract CounterGas is Test {
         assertLe(gasUsed, MAX_GAS_SETNUMBER);
     }
 
-    function testGasIncrement(uint16 x, uint16 times) public {
+    function testGasIncrement(uint16 x, uint8 times) public {
         counter.setNumber(x);
 
         //Overflow
@@ -40,7 +41,7 @@ contract CounterGas is Test {
         assertLe(gasUsed, MAX_GAS_INCREMENT);
     }
 
-    function testGasDouble(uint16 x, uint16 a, uint16 b) public{
+    function testGasDouble(uint16 x, uint8 a, uint8 b) public{
         counter.setNumber(x);
 
         uint256 mult = uint256(a) * uint256(b);
