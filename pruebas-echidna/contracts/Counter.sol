@@ -29,8 +29,4 @@ contract Counter {
             }
         }
     }
-
-    function checkcalldata(uint256 a) public virtual{
-        // Esta función está vacía para medir solo el coste de enviar los datos (calldata)
-    }
 }
